@@ -1,74 +1,89 @@
 # Dental-OPG-Bone-Loss-Detection-using-YOLOv8-
 
-## **Overview**
+This project uses YOLOv8 to detect **bone loss in dental X-ray images (OPG images)**. The dataset was sourced from Roboflow and includes annotations for various dental conditions, but the model is trained specifically to detect **bone loss**.
 
-This project focuses on detecting dental conditions in Orthopantomogram (OPG) images using the YOLOv8 model from Ultralytics. The model identifies six classes of dental conditions: Healthy Teeth (HealthyT), Caries (C), Impacted Teeth (Imp), Broken Down Root (BDR), Infection (Inf), and Fractured Teeth (Ft). Implemented in a Google Colab with GPU acceleration, this codebase is designed to be reusable for users with their own OPG datasets.
+---
 
-## **Dataset**
+## 📁 Dataset
 
-- **Source**: Mendley Dataset
-- **Classes**: 6 distinct dental conditions (**HealthyT**, **C**, **Imp**, **BDR**, **Inf**, **Ft**)
-- **File Structure**:
+- **Source:** [Roboflow: dadad-rvg](https://universe.roboflow.com/arshs-workspace414141/dadad-rvg/dataset/5)
+- **Classes Focused On:** `bone loss` (Other classes in dataset were ignored for this project)
+- **Structure:**
+dadad_dataset/
+├── train/
+├── valid/
+├── test/
+└── data.yaml
 
-```
-dataset/
-├── Original Dataset/
-└── Augmented Dataset/
-    ├── train/
-    │   ├── images/      
-    │   └── labels/    
-    ├── valid/
-    │   ├── images/       
-    │   └── labels/
-    └── test/
-        ├── images/   
-        └── labels/
-```
 
-Each image file in the images/ directories must have a corresponding label file in the labels/ directories with the same filename (e.g., image1.jpg corresponds to image1.txt). Label files contain annotations in YOLO format: `<class_id> <x_center> <y_center> <width> <height>`, with normalized coordinates. Users can adapt the code by updating the data.yaml file with their dataset paths.
+---
 
-## **Project Workflow**
+## 🤖 Model Selection & Rationale
 
-**Data Preprocessing**
+We chose **YOLOv8n (nano)** as our object detection model for the following reasons:
 
-- The dataset is extracted from a zip file using the **zipfile** module and verified for correct directory structure.
-- A **data.yaml** file is created to specify paths to training, validation, and test directories, along with class names.
-- Images are loaded and processed for **YOLOv8** compatibility.
+- **Lightweight and fast**: Ideal for quick experimentation and inference.
+- **Pretrained weights**: Accelerates training time and boosts performance on small datasets.
+- **Accurate and efficient** for real-time object detection tasks.
+- **Scalable**: Easy to switch to larger models (YOLOv8s, m, l, x) if needed.
 
-1. **Model Selection**
+---
 
-   - The **YOLOv8l** model from **Ultralytics** is used for object detection, leveraging its state-of-the-art performance for identifying dental conditions in OPG images.
-   - The model is trained using **GPU** acceleration for efficient computation, with weights saved to /content/runs/train/exp/weights/best.pt.
+## 🏗️ Training Configuration
 
-2. **Model Evaluation**
+| Parameter        | Value        |
+|------------------|--------------|
+| Model            | YOLOv8n      |
+| Epochs           | 50           |
+| Image Size       | 640x640      |
+| Batch Size       | 16           |
+| Optimizer        | SGD          |
+| Learning Rate    | 0.01         |
+| Validation Split | 20%          |
 
-   - The model is evaluated by comparing predicted bounding boxes and class labels against ground truth annotations.
-   - Performance is assessed using **precision**, **recall**, and **mean Average Precision (mAP)**, as provided by YOLOv8’s default evaluation metrics.
-   - Inference results are visualized with red bounding boxes, class labels, and confidence scores overlaid on images.
+---
 
-## **Installation & Usage**
+## 📊 Evaluation Metrics
 
-### **Prerequisites**
+After training, the model was evaluated using standard object detection metrics:
 
-Ensure **Python 3.8+** is installed along with the required packages:
+| Metric       | Score |
+|--------------|-------|
+| **mAP@0.5**   | 0.74  |
+| **Precision** | 0.70  |
+| **Recall**    | 0.65  |
+| **F1 Score**  | 0.67  |
 
-```
-pip install ultralytics torch torchvision matplotlib numpy pillow pyyaml
-```
+---
 
-### **Running the Notebook**
+## ❌ Why Some Metrics Are Below Expectation
 
-1. Open the Notebook [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/14wyuCyCwAWvGYmDFW9ip0K6rlFZlTmnD)
-2. Ensure your dataset is available in the working directory or update the zip_path in the notebook to point to your dataset zip file.
-3. Run all cells to:
-   - Install dependencies
-   - Extract and verify the dataset
-   - Create the data.yaml file
-   - Train the **YOLOv8** model
-   - Perform inference and visualize results
-4. For inference, upload OPG images via **Google Colab**’s file upload widget to detect dental conditions with bounding boxes and confidence scores.
+### 🔻 Issue: Low Recall
+- The model missed several cases of bone loss, likely due to:
+- Small training set size
+- Complex image patterns
+- Class imbalance
 
-## **Notes**
+### 🔻 Issue: Moderate Precision
+- Some false positives are detected, possibly due to:
+- Similar-looking features (e.g., shadows, fillings)
+- Imperfect annotations in the dataset
 
-- The notebook is optimized for **Google Colab** with **GPU** acceleration.
-- Customize training by modifying the data.yaml file or **YOLOv8** parameters (e.g., epochs, batch size) in the notebook.
+---
+
+## ✅ Suggestions to Improve Results
+
+- **Data Augmentation**: Flip, rotate, and contrast adjustments to increase data diversity.
+- **More Epochs**: Train for 100–200 epochs to improve learning.
+- **Use a Bigger Model**: Try `yolov8m` or `yolov8l` for better accuracy.
+- **Clean Annotations**: Ensure labels are precise and consistent.
+- **Transfer Learning**: Start with pretrained weights on medical datasets.
+
+---
+
+## 🧪 Inference Example
+
+You can test an X-ray image using:
+
+```bash
+!yolo task=detect mode=predict model=runs/detect/train/weights/best.pt source=/path/to/image.png conf=0.5
